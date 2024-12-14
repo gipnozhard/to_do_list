@@ -17,7 +17,30 @@ type Product struct {
 
 var database *sql.DB
 
-func indexHandler(w http.ResponseWriter, _ *http.Request) {
+// функция добавления данных
+func CreateHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		err := r.ParseForm()
+		if err != nil {
+			panic(err)
+		}
+		model := r.FormValue("model")
+		company := r.FormValue("company")
+		price := r.FormValue("price")
+
+		_, err = database.Exec("INSERT INTO products (model, company, price) VALUES ($1, $2, $3)",
+			model, company, price)
+
+		if err != nil {
+			panic(err)
+		}
+		http.Redirect(w, r, "/", 301)
+	} else {
+		http.ServeFile(w, r, "./templates/create.html")
+	}
+}
+
+func IndexHandler(w http.ResponseWriter, _ *http.Request) {
 
 	rows, err := database.Query("SELECT * FROM products")
 	if err != nil {
@@ -61,7 +84,8 @@ func main() {
 		}
 	}(db)
 
-	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/", IndexHandler)
+	http.HandleFunc("/create", CreateHandler)
 
 	fmt.Println("Server is listening...")
 	err = http.ListenAndServe(`:8181`, nil)
